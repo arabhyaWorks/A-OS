@@ -5,7 +5,10 @@
       "Bash(ls -la \"e:\\\\arabhyaWorks\\\\test-aos\\\\docs\"\" 2>/dev/null || dir \"e:arabhyaWorkstest-aosdocs\"\")",
       "Bash(find:*)",
       "Bash(wc:*)",
-      "Bash(mingw32-make:*)"
+      "Bash(mingw32-make:*)",
+      "Bash(./aos.exe:*)",
+      "Bash(pacman:*)",
+      "Bash(cmake:*)"
     ]
   }
 }

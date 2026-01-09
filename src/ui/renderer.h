@@ -64,6 +64,9 @@ public:
     int getWidth() const { return screenWidth; }
     int getHeight() const { return screenHeight; }
 
+    // Get SDL renderer (for advanced operations like screenshots)
+    SDL_Renderer* getSDLRenderer() { return sdlRenderer; }
+
 private:
     SDL_Window* window;
     SDL_Renderer* sdlRenderer;

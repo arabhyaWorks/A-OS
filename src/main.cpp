@@ -1,6 +1,10 @@
 #include "os/os_core.h"
 #include "apps/home_app.h"
 #include "apps/settings_app.h"
+#include "apps/camera_app.h"
+#include "apps/sysinfo_app.h"
+#include "apps/media_app.h"
+#include "apps/flappy_app.h"
 #include <memory>
 #include <iostream>
 
@@ -15,7 +19,7 @@ int main(int argc, char* argv[]) {
     std::cout << R"(
     ╔═══════════════════════════════════════╗
     ║                                       ║
-    ║              A-OS v0.1                ║
+    ║              A-OS v0.2                ║
     ║   Application Operating System        ║
     ║                                       ║
     ╚═══════════════════════════════════════╝
@@ -40,8 +44,12 @@ int main(int argc, char* argv[]) {
 
     g_appManager->registerApp(std::make_unique<AOS::HomeApp>());
     g_appManager->registerApp(std::make_unique<AOS::SettingsApp>());
+    g_appManager->registerApp(std::make_unique<AOS::CameraApp>());
+    g_appManager->registerApp(std::make_unique<AOS::SysInfoApp>());
+    g_appManager->registerApp(std::make_unique<AOS::MediaApp>());
+    g_appManager->registerApp(std::make_unique<AOS::FlappyApp>());
 
-    std::cout << "Applications registered." << std::endl;
+    std::cout << "6 applications registered." << std::endl;
 
     // Launch home screen
     g_appManager->launchApp(0);

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(A-OS VERSION 0.1.0 LANGUAGES CXX)
+project(A-OS VERSION 0.2.0 LANGUAGES CXX)
 
 # C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -59,6 +59,10 @@ set(AOS_SOURCES
     src/ui/renderer.cpp
     src/apps/home_app.cpp
     src/apps/settings_app.cpp
+    src/apps/camera_app.cpp
+    src/apps/sysinfo_app.cpp
+    src/apps/media_app.cpp
+    src/apps/flappy_app.cpp
 )
 
 # Executable
@@ -75,6 +79,26 @@ elseif(SDL2_TTF_FOUND)
 else()
     # Try to link directly (last resort)
     target_link_libraries(aos SDL2_ttf)
+endif()
+
+# Find SDL2_mixer (for audio playback)
+find_package(SDL2_mixer QUIET)
+if(NOT SDL2_mixer_FOUND)
+    find_package(PkgConfig)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SDL2_MIXER QUIET SDL2_mixer)
+    endif()
+endif()
+
+# Link SDL2_mixer
+if(SDL2_mixer_FOUND)
+    target_link_libraries(aos SDL2_mixer::SDL2_mixer)
+elseif(SDL2_MIXER_FOUND)
+    target_link_libraries(aos ${SDL2_MIXER_LIBRARIES})
+    include_directories(${SDL2_MIXER_INCLUDE_DIRS})
+else()
+    # Try to link directly (last resort)
+    target_link_libraries(aos SDL2_mixer)
 endif()
 
 # Platform-specific linking
