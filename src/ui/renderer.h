@@ -55,6 +55,15 @@ public:
     // Drawing primitives
     void drawRect(const Rect& rect, const Color& color, bool filled = false);
     void drawText(const std::string& text, int x, int y, const Color& color, int fontSize = 24);
+    
+    // Advanced drawing
+    void drawGradientRect(const Rect& rect, const Color& colorTop, const Color& colorBottom);
+    void drawRoundedRect(const Rect& rect, const Color& color, int radius, bool filled = true);
+    void drawShadow(const Rect& rect, int offset = 4, int blur = 8);
+    void drawCircle(int centerX, int centerY, int radius, const Color& color, bool filled = true);
+    void drawLine(int x1, int y1, int x2, int y2, const Color& color, int thickness = 1);
+    void drawGlassCard(const Rect& rect, int radius, float opacity = 0.15f);
+    void drawRadialGradient(int centerX, int centerY, int radius, const Color& centerColor, const Color& edgeColor);
 
     // Font management
     bool loadFont(const std::string& path, int size);

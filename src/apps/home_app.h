@@ -35,15 +35,36 @@ private:
         std::string name;
         int x, y, w, h;
         bool focused;
+        float hoverAnimation;     // 0.0 to 1.0 for smooth transitions
+        float iconHue;            // Color hue for app icon (0-360)
     };
 
     std::vector<AppTile> appTiles;
     size_t focusedIndex;
+    
+    // Animation state
+    float globalTime;             // Total elapsed time for animations
+    float focusTransition;        // Smooth focus transition (0.0 to 1.0)
+    size_t previousFocusIndex;    // For smooth transitions
+    float scrollOffset;           // Smooth scrolling offset
+    float targetScrollOffset;     // Target scroll position
+    
+    // UI Layout constants
+    static constexpr int TILE_WIDTH = 500;
+    static constexpr int TILE_HEIGHT = 100;
+    static constexpr int TILE_SPACING = 20;
+    static constexpr int TILE_MARGIN_LEFT = 80;
+    static constexpr int TILE_START_Y = 140;
+    static constexpr int HEADER_HEIGHT = 100;
 
     void refreshAppList();
     void moveFocusUp();
     void moveFocusDown();
     void launchFocusedApp();
+    void updateAnimations(float deltaTime);
+    void drawModernHeader(Renderer& renderer);
+    void drawModernTile(Renderer& renderer, const AppTile& tile, int index);
+    void drawAppIcon(Renderer& renderer, int x, int y, int size, float hue, float hover = 0.0f);
 };
 
 } // namespace AOS

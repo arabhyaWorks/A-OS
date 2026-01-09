@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include <iostream>
+#include <cmath>
 
 namespace AOS {
 
@@ -147,6 +148,197 @@ TTF_Font* Renderer::getFont(int size) {
 
     std::cerr << "Could not load any system font for size " << size << std::endl;
     return nullptr;
+}
+
+void Renderer::drawGradientRect(const Rect& rect, const Color& colorTop, const Color& colorBottom) {
+    // Draw vertical gradient line by line
+    for (int y = 0; y < rect.h; ++y) {
+        float t = (float)y / (float)rect.h;
+        
+        uint8_t r = (uint8_t)(colorTop.r + t * (colorBottom.r - colorTop.r));
+        uint8_t g = (uint8_t)(colorTop.g + t * (colorBottom.g - colorTop.g));
+        uint8_t b = (uint8_t)(colorTop.b + t * (colorBottom.b - colorTop.b));
+        uint8_t a = (uint8_t)(colorTop.a + t * (colorBottom.a - colorTop.a));
+        
+        SDL_SetRenderDrawColor(sdlRenderer, r, g, b, a);
+        SDL_RenderDrawLine(sdlRenderer, rect.x, rect.y + y, rect.x + rect.w, rect.y + y);
+    }
+}
+
+void Renderer::drawRoundedRect(const Rect& rect, const Color& color, int radius, bool filled) {
+    SDL_SetRenderDrawColor(sdlRenderer, color.r, color.g, color.b, color.a);
+    
+    if (radius <= 0 || radius > rect.w / 2 || radius > rect.h / 2) {
+        // Fallback to regular rectangle
+        drawRect(rect, color, filled);
+        return;
+    }
+    
+    // Draw rounded corners cleanly
+    if (filled) {
+        // Center rectangle (horizontal)
+        SDL_Rect centerH = { rect.x, rect.y + radius, rect.w, rect.h - 2 * radius };
+        SDL_RenderFillRect(sdlRenderer, &centerH);
+        
+        // Top and bottom rectangles
+        SDL_Rect topRect = { rect.x + radius, rect.y, rect.w - 2 * radius, radius };
+        SDL_RenderFillRect(sdlRenderer, &topRect);
+        
+        SDL_Rect bottomRect = { rect.x + radius, rect.y + rect.h - radius, rect.w - 2 * radius, radius };
+        SDL_RenderFillRect(sdlRenderer, &bottomRect);
+        
+        // Four corner circles (filled)
+        drawCircle(rect.x + radius, rect.y + radius, radius, color, true);
+        drawCircle(rect.x + rect.w - radius - 1, rect.y + radius, radius, color, true);
+        drawCircle(rect.x + radius, rect.y + rect.h - radius - 1, radius, color, true);
+        drawCircle(rect.x + rect.w - radius - 1, rect.y + rect.h - radius - 1, radius, color, true);
+    } else {
+        // Draw outline only - use SDL for clean lines
+        for (int i = 0; i < 2; ++i) {
+            // Top line
+            SDL_RenderDrawLine(sdlRenderer, rect.x + radius, rect.y + i, rect.x + rect.w - radius, rect.y + i);
+            // Bottom line
+            SDL_RenderDrawLine(sdlRenderer, rect.x + radius, rect.y + rect.h - i, rect.x + rect.w - radius, rect.y + rect.h - i);
+            // Left line
+            SDL_RenderDrawLine(sdlRenderer, rect.x + i, rect.y + radius, rect.x + i, rect.y + rect.h - radius);
+            // Right line
+            SDL_RenderDrawLine(sdlRenderer, rect.x + rect.w - i, rect.y + radius, rect.x + rect.w - i, rect.y + rect.h - radius);
+        }
+        
+        // Corner arcs using circle outline
+        drawCircle(rect.x + radius, rect.y + radius, radius, color, false);
+        drawCircle(rect.x + rect.w - radius - 1, rect.y + radius, radius, color, false);
+        drawCircle(rect.x + radius, rect.y + rect.h - radius - 1, radius, color, false);
+        drawCircle(rect.x + rect.w - radius - 1, rect.y + rect.h - radius - 1, radius, color, false);
+    }
+}
+
+void Renderer::drawShadow(const Rect& rect, int offset, int blur) {
+    // Draw soft, realistic shadow with Gaussian-like falloff
+    int steps = blur;
+    if (steps < 4) steps = 4;
+    if (steps > 20) steps = 20;
+    
+    for (int i = steps - 1; i >= 0; --i) {
+        float t = (float)i / (float)steps;
+        // Gaussian-like falloff for smoother shadows
+        float gaussian = expf(-3.0f * t * t);
+        uint8_t alpha = (uint8_t)(35 * gaussian);
+        
+        if (alpha < 2) continue;
+        
+        Color shadowColor(0, 0, 0, alpha);
+        Rect shadowRect(
+            rect.x + offset - blur/2 + (int)(t * blur),
+            rect.y + offset - blur/2 + (int)(t * blur),
+            rect.w + blur - (int)(t * blur * 2),
+            rect.h + blur - (int)(t * blur * 2)
+        );
+        
+        drawRoundedRect(shadowRect, shadowColor, 12 + i/2, true);
+    }
+}
+
+void Renderer::drawCircle(int centerX, int centerY, int radius, const Color& color, bool filled) {
+    SDL_SetRenderDrawColor(sdlRenderer, color.r, color.g, color.b, color.a);
+    
+    // Midpoint circle algorithm
+    int x = radius;
+    int y = 0;
+    int radiusError = 1 - x;
+    
+    while (x >= y) {
+        if (filled) {
+            // Draw horizontal lines to fill the circle
+            SDL_RenderDrawLine(sdlRenderer, centerX - x, centerY + y, centerX + x, centerY + y);
+            SDL_RenderDrawLine(sdlRenderer, centerX - x, centerY - y, centerX + x, centerY - y);
+            SDL_RenderDrawLine(sdlRenderer, centerX - y, centerY + x, centerX + y, centerY + x);
+            SDL_RenderDrawLine(sdlRenderer, centerX - y, centerY - x, centerX + y, centerY - x);
+        } else {
+            // Draw outline points
+            SDL_RenderDrawPoint(sdlRenderer, centerX + x, centerY + y);
+            SDL_RenderDrawPoint(sdlRenderer, centerX - x, centerY + y);
+            SDL_RenderDrawPoint(sdlRenderer, centerX + x, centerY - y);
+            SDL_RenderDrawPoint(sdlRenderer, centerX - x, centerY - y);
+            SDL_RenderDrawPoint(sdlRenderer, centerX + y, centerY + x);
+            SDL_RenderDrawPoint(sdlRenderer, centerX - y, centerY + x);
+            SDL_RenderDrawPoint(sdlRenderer, centerX + y, centerY - x);
+            SDL_RenderDrawPoint(sdlRenderer, centerX - y, centerY - x);
+        }
+        
+        y++;
+        if (radiusError < 0) {
+            radiusError += 2 * y + 1;
+        } else {
+            x--;
+            radiusError += 2 * (y - x + 1);
+        }
+    }
+}
+
+void Renderer::drawLine(int x1, int y1, int x2, int y2, const Color& color, int thickness) {
+    SDL_SetRenderDrawColor(sdlRenderer, color.r, color.g, color.b, color.a);
+    
+    if (thickness <= 1) {
+        SDL_RenderDrawLine(sdlRenderer, x1, y1, x2, y2);
+    } else {
+        // Draw thick line by drawing multiple parallel lines
+        int halfThick = thickness / 2;
+        
+        // Calculate perpendicular offset based on line direction
+        float dx = (float)(x2 - x1);
+        float dy = (float)(y2 - y1);
+        float length = sqrtf(dx * dx + dy * dy);
+        
+        if (length > 0) {
+            float perpX = -dy / length;
+            float perpY = dx / length;
+            
+            for (int i = -halfThick; i <= halfThick; ++i) {
+                int offsetX = (int)(perpX * i);
+                int offsetY = (int)(perpY * i);
+                SDL_RenderDrawLine(sdlRenderer, 
+                    x1 + offsetX, y1 + offsetY, 
+                    x2 + offsetX, y2 + offsetY);
+            }
+        }
+    }
+}
+
+void Renderer::drawGlassCard(const Rect& rect, int radius, float opacity) {
+    // Glassmorphism effect: semi-transparent with subtle gradient
+    Color glassBase(255, 255, 255, (uint8_t)(opacity * 255));
+    Color glassHighlight(255, 255, 255, (uint8_t)(opacity * 1.5f * 255));
+    
+    // Base glass layer
+    drawRoundedRect(rect, glassBase, radius, true);
+    
+    // Top highlight for depth
+    Rect highlightRect(rect.x, rect.y, rect.w, rect.h / 3);
+    drawGradientRect(highlightRect, glassHighlight, Color(255, 255, 255, 0));
+    
+    // Subtle border
+    Color borderColor(255, 255, 255, (uint8_t)(opacity * 2.0f * 255));
+    drawRoundedRect(rect, borderColor, radius, false);
+}
+
+void Renderer::drawRadialGradient(int centerX, int centerY, int radius, const Color& centerColor, const Color& edgeColor) {
+    // Draw concentric circles with color interpolation
+    int steps = radius / 2;
+    if (steps < 10) steps = 10;
+    if (steps > 50) steps = 50;
+    
+    for (int i = steps; i > 0; --i) {
+        float t = (float)i / (float)steps;
+        int currentRadius = (int)(radius * t);
+        
+        uint8_t r = (uint8_t)(centerColor.r + (edgeColor.r - centerColor.r) * t);
+        uint8_t g = (uint8_t)(centerColor.g + (edgeColor.g - centerColor.g) * t);
+        uint8_t b = (uint8_t)(centerColor.b + (edgeColor.b - centerColor.b) * t);
+        uint8_t a = (uint8_t)(centerColor.a + (edgeColor.a - centerColor.a) * t);
+        
+        drawCircle(centerX, centerY, currentRadius, Color(r, g, b, a), true);
+    }
 }
 
 } // namespace AOS
