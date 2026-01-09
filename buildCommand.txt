@@ -1,0 +1,11 @@
+# Rebuild after changes
+cd /e/arabhyaWorks/test-aos/build
+mingw32-make -j8
+
+# Run
+./aos.exe
+
+# Clean rebuild
+rm -rf build && mkdir build && cd build
+cmake .. -G "MinGW Makefiles"
+mingw32-make -j8
